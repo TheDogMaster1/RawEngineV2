@@ -8,7 +8,7 @@
 #include "core/mesh.h"
 #include "core/assimpLoader.h"
 #include "core/texture.h"
-
+#include "core/Camera.h"
 //#define MAC_CLION
 #define VSTUDIO
 
@@ -29,9 +29,14 @@
 int g_width = 800;
 int g_height = 600;
 
+GLenum drawMode = GL_TRIANGLES;
+
+Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(g_width, g_height));
+
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+   camera.Input(window, 0.01f);
 }
 
 void framebufferSizeCallback(GLFWwindow *window,
@@ -39,6 +44,7 @@ void framebufferSizeCallback(GLFWwindow *window,
     g_width = width;
     g_height = height;
     glViewport(0, 0, width, height);
+    camera.ChangeAspectRatio(glm::vec2(g_width, g_height));
 }
 
 std::string readFileToString(const std::string &filePath) {
@@ -141,8 +147,10 @@ int main() {
 
     core::Mesh quad = core::Mesh::generateQuad();
     core::Model quadModel({quad});
+
     quadModel.translate(glm::vec3(0,0,-2.5));
     quadModel.scale(glm::vec3(5, 5, 1));
+
 
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
     core::Texture cmgtGatoTexture("textures/CMGaTo_crop.png");
@@ -151,16 +159,6 @@ int main() {
     glClearColor(clearColor.r,
                  clearColor.g, clearColor.b, clearColor.a);
 
-    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 10.0f);
-    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
-    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
-    glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
-
-    //VP
-    glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(g_width) / static_cast<float>(g_height), 0.1f, 100.0f);
 
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
     GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
@@ -178,23 +176,33 @@ int main() {
         ImGui::NewFrame();
         ImGui::Begin("Raw Engine v2");
         ImGui::Text("Hello :)");
+        if (ImGui::Button("Switch Draw Mode")) {
+            if (drawMode == GL_TRIANGLES) {
+                drawMode = GL_LINES;
+            }
+            else {
+                drawMode = GL_TRIANGLES;
+            }
+        }
         ImGui::End();
 
         processInput(window);
         suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(rotationStrength) * static_cast<float>(deltaTime));
 
+
+        camera.TranslateCamera();
         glUseProgram(textureShaderProgram);
-        glUniformMatrix4fv(textureModelUniform, 1, GL_FALSE, glm::value_ptr(projection * view * quadModel.getModelMatrix()));
+        glUniformMatrix4fv(textureModelUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * quadModel.getModelMatrix()));
         glActiveTexture(GL_TEXTURE0);
         glUniform1i(textureUniform, 0);
         glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
-        quadModel.render();
+        quadModel.render(drawMode);
         glBindVertexArray(0);
         glActiveTexture(GL_TEXTURE0);
 
         glUseProgram(modelShaderProgram);
-        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(projection * view * suzanne.getModelMatrix()));
-        suzanne.render();
+        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.getModelMatrix()));
+        suzanne.render(drawMode);
         glBindVertexArray(0);
 
         ImGui::Render();
