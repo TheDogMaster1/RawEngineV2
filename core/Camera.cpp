@@ -6,43 +6,62 @@
 #include <GLFW/glfw3.h>
 
 namespace Core {
-    Camera::Camera(glm::vec3 pos, glm::vec3 target, glm::vec2 aspectRatio) {
+    Camera::Camera(glm::vec3 pos, glm::vec2 aspectRatio) {
         this->cameraPos = pos;
-        this->cameraTarget = target;
         this->aspectRatio = aspectRatio;
-        cameraDirection = glm::normalize(cameraPos - cameraTarget);
-        up = glm::vec3(0.0f, 1.0f, 0.0f);
-        cameraRight = glm::normalize(glm::cross(up, cameraDirection));
-        cameraUp = glm::cross(cameraDirection, cameraRight);
-        CameraMoveAxis = glm::vec3(0.0f, 0.0f, 0.0f);
-        view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+        UpdateVectors();
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         projection = glm::perspective(glm::radians(45.0f), float(aspectRatio.x) / float(aspectRatio.y), 0.1f, 100.0f);
+    }
 
+    void Camera::MouseInput(GLFWwindow *window, double xpos, double ypos) {
+        if (firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos;
+        lastX = xpos;
+        lastY = ypos;
+
+        float sensitivity = 0.1f;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+
+        yaw += xoffset;
+        pitch += yoffset;
+
+        if (pitch > 89.0f)
+            pitch = 89.0f;
+        if (pitch < -89.0f)
+            pitch = -89.0f;
+     UpdateVectors();
     }
 
     void Camera::UpdateProjection() {
         projection = glm::perspective(glm::radians(45.0f), float(aspectRatio.x) / float(aspectRatio.y), 0.1f, 100.0f);
     }
-    void Camera::Input(GLFWwindow *window, float standardSpeed) {
-        standardSpeed = 0.01f * speedMultiplier;
+    void Camera::Input(GLFWwindow *window, float speed) {
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            CameraMoveAxis.z -= standardSpeed;
+            cameraPos += speed * speedMultiplier * cameraFront;
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            CameraMoveAxis.z += standardSpeed;
+            cameraPos -= speed * speedMultiplier * cameraFront;
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-            CameraMoveAxis.x -= standardSpeed;
+            cameraPos += speed * speedMultiplier * cameraRight;
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-            CameraMoveAxis.x += standardSpeed;
+            cameraPos -= speed * speedMultiplier * cameraRight;
         if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-            CameraMoveAxis.y += standardSpeed;
+            cameraPos += speed * speedMultiplier * cameraUp;
         if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-            CameraMoveAxis.y -= standardSpeed;
+            cameraPos -= speed * speedMultiplier * cameraUp;
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
             speedMultiplier = 2;
         else
             speedMultiplier = 1;
-
     }
 
     void Camera::ChangeAspectRatio(glm::vec2 aspectRatio) {
@@ -50,24 +69,12 @@ namespace Core {
        UpdateProjection();
     }
 
-    void Camera::TranslateCamera() {
-        view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
-    }
-
-    void Camera::RotateCamera() {
-        cameraPos += CameraMoveAxis;
-        cameraTarget += CameraMoveAxis;
-    }
-
-    glm::vec3 Camera::GetMoveAxis() const {
-        return this->CameraMoveAxis;
+    void Camera::ControlCamera() {
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     }
 
     glm::vec3 Camera::GetCameraPos() const {
         return this->cameraPos;
-    }
-    glm::vec3 Camera::GetCameraTarget() const {
-        return this->cameraTarget;
     }
     glm::vec3 Camera::GetCameraUp() const {
         return this->cameraUp;
@@ -80,5 +87,14 @@ namespace Core {
     }
     glm::mat4 Camera::GetViewProjection() const {
         return this->projection * this->view;
+    }
+
+    void Camera::UpdateVectors() {
+        cameraDirection.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraDirection.y = sin(glm::radians(pitch));
+        cameraDirection.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(cameraDirection);
+        cameraRight = glm::normalize(glm::cross(up, cameraFront));
+        cameraUp = glm::cross(cameraFront, cameraRight);
     }
 }

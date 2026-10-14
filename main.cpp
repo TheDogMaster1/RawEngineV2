@@ -29,14 +29,30 @@
 int g_width = 800;
 int g_height = 600;
 
+float cameraSpeed = 1.0f;
+
+double currentTime = glfwGetTime();
+double finishFrameTime = 0.0;
+float deltaTime = 0.0f;
+
 GLenum drawMode = GL_TRIANGLES;
 
-Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(g_width, g_height));
+Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec2(g_width, g_height));
+
+void CameraCallBack(GLFWwindow *window, double xpos, double ypos) {
+    camera.MouseInput(window, xpos, ypos);
+}
 
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-   camera.Input(window, 0.01f);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+    else
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+   camera.Input(window, cameraSpeed * deltaTime);
+
 }
 
 void framebufferSizeCallback(GLFWwindow *window,
@@ -94,6 +110,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetCursorPosCallback(window, CameraCallBack);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         printf("Failed to initialize GLAD\n");
@@ -164,9 +181,7 @@ int main() {
     GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
     GLint textureUniform = glGetUniformLocation(textureShaderProgram, "text");
 
-    double currentTime = glfwGetTime();
-    double finishFrameTime = 0.0;
-    float deltaTime = 0.0f;
+
     float rotationStrength = 100.0f;
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -184,13 +199,14 @@ int main() {
                 drawMode = GL_TRIANGLES;
             }
         }
+        ImGui::InputFloat("Speed", &cameraSpeed);
         ImGui::End();
 
         processInput(window);
         suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(rotationStrength) * static_cast<float>(deltaTime));
 
 
-        camera.TranslateCamera();
+        camera.ControlCamera();
         glUseProgram(textureShaderProgram);
         glUniformMatrix4fv(textureModelUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * quadModel.getModelMatrix()));
         glActiveTexture(GL_TEXTURE0);

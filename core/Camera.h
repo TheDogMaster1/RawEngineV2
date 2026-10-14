@@ -13,34 +13,37 @@ namespace Core {
     class Camera {
     private:
         glm::vec3 cameraPos;
-        glm::vec3 cameraTarget;
         glm::vec3 cameraDirection;
-        glm::vec3 up;
+        glm::vec3 cameraFront;
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 cameraRight;
         glm::vec3 cameraUp;
 
+        float pitch = 0.0f;
+        float yaw = -90.0f;
+        float lastX = 400, lastY = 300;
+        bool firstMouse = true;
+
         glm::vec2 aspectRatio;
-        glm::vec3 CameraMoveAxis;
         glm::mat4 view;
         glm::mat4 projection;
         void UpdateProjection();
+        void UpdateVectors();
     public:
         float speedMultiplier = 2.0f;
 
-        Camera(glm::vec3 pos, glm::vec3 target, glm::vec2 aspectRatio);
+        Camera(glm::vec3 pos, glm::vec2 aspectRatio);
+
+        void MouseInput(GLFWwindow *window, double xpos, double ypos);
 
         void Input(GLFWwindow *window, float standardSpeed);
 
         void ChangeAspectRatio(glm::vec2 aspectRatio);
 
-        void TranslateCamera();
+        void ControlCamera();
 
-        void RotateCamera();
-
-        glm::vec3 GetMoveAxis() const;
 
         glm::vec3 GetCameraPos() const;
-        glm::vec3 GetCameraTarget() const;
         glm::vec3 GetCameraUp() const;
         glm::mat4 GetView() const;
         glm::mat4 GetProjection() const;
