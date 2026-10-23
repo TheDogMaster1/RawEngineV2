@@ -22,6 +22,7 @@ namespace Core {
         float pitch = 0.0f;
         float yaw = -90.0f;
         float lastX = 400, lastY = 300;
+        float zoom = 45.0f;
         bool firstMouse = true;
 
         glm::vec2 aspectRatio;
@@ -36,12 +37,15 @@ namespace Core {
 
         void MouseInput(GLFWwindow *window, double xpos, double ypos);
 
+        void ScrollInput(GLFWwindow *window, double xoffset, double yoffset);
+
         void Input(GLFWwindow *window, float standardSpeed);
 
         void ChangeAspectRatio(glm::vec2 aspectRatio);
 
-        void ControlCamera();
+        void SetFirstMouse(bool input);
 
+        void ControlCamera();
 
         glm::vec3 GetCameraPos() const;
         glm::vec3 GetCameraUp() const;

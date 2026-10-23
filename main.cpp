@@ -9,6 +9,7 @@
 #include "core/assimpLoader.h"
 #include "core/texture.h"
 #include "core/Camera.h"
+#include "core/LightObj.h"
 //#define MAC_CLION
 #define VSTUDIO
 
@@ -34,13 +35,26 @@ float cameraSpeed = 1.0f;
 double currentTime = glfwGetTime();
 double finishFrameTime = 0.0;
 float deltaTime = 0.0f;
+bool holdingRMB = false;
 
 GLenum drawMode = GL_TRIANGLES;
 
 Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec2(g_width, g_height));
 
+Core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0));
+
 void CameraCallBack(GLFWwindow *window, double xpos, double ypos) {
-    camera.MouseInput(window, xpos, ypos);
+    if (holdingRMB) {
+        camera.MouseInput(window, xpos, ypos);
+    }
+    else
+        camera.SetFirstMouse(true);
+}
+
+void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods);
+
+void ScrollCallBack(GLFWwindow *window, double xoffset, double yoffset) {
+    camera.ScrollInput(window, xoffset, yoffset);
 }
 
 void processInput(GLFWwindow *window) {
@@ -111,6 +125,8 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetCursorPosCallback(window, CameraCallBack);
+    glfwSetMouseButtonCallback(window, MouseButtonCallBack);
+    glfwSetScrollCallback(window, ScrollCallBack);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         printf("Failed to initialize GLAD\n");
@@ -172,15 +188,17 @@ int main() {
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
     core::Texture cmgtGatoTexture("textures/CMGaTo_crop.png");
 
+
+    GLint lightColor0Uniform = glGetUniformLocation(fragmentShader, "light[0].color");
+    // glUniform4fv(lightColor0Uniform, 1, );
+
     glm::vec4 clearColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     glClearColor(clearColor.r,
                  clearColor.g, clearColor.b, clearColor.a);
 
-
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
     GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
     GLint textureUniform = glGetUniformLocation(textureShaderProgram, "text");
-
 
     float rotationStrength = 100.0f;
     while (!glfwWindowShouldClose(window)) {
@@ -239,3 +257,14 @@ int main() {
     glfwTerminate();
     return 0;
 }
+
+    void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods) {
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+            holdingRMB = true;
+        }
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+            holdingRMB = false;
+        }
+    }
+
+

@@ -11,38 +11,49 @@ namespace Core {
         this->aspectRatio = aspectRatio;
         UpdateVectors();
         view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        projection = glm::perspective(glm::radians(45.0f), float(aspectRatio.x) / float(aspectRatio.y), 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(zoom), float(aspectRatio.x) / float(aspectRatio.y), 0.1f, 100.0f);
     }
 
     void Camera::MouseInput(GLFWwindow *window, double xpos, double ypos) {
-        if (firstMouse)
-        {
+            if (firstMouse)
+            {
+                lastX = xpos;
+                lastY = ypos;
+                firstMouse = false;
+            }
+
+            float xoffset = xpos - lastX;
+            float yoffset = lastY - ypos;
             lastX = xpos;
             lastY = ypos;
-            firstMouse = false;
+
+            float sensitivity = 0.1f;
+            xoffset *= sensitivity;
+            yoffset *= sensitivity;
+
+            yaw += xoffset;
+            pitch += yoffset;
+
+            if (pitch > 89.0f)
+                pitch = 89.0f;
+            if (pitch < -89.0f)
+                pitch = -89.0f;
+            UpdateVectors();
+    }
+
+    void Camera::ScrollInput(GLFWwindow *window, double xoffset, double yoffset) {
+        zoom -= yoffset;
+        if (zoom <= 30.0f) {
+            zoom = 30.0f;
         }
-
-        float xoffset = xpos - lastX;
-        float yoffset = lastY - ypos;
-        lastX = xpos;
-        lastY = ypos;
-
-        float sensitivity = 0.1f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        yaw += xoffset;
-        pitch += yoffset;
-
-        if (pitch > 89.0f)
-            pitch = 89.0f;
-        if (pitch < -89.0f)
-            pitch = -89.0f;
-     UpdateVectors();
+        if (zoom >= 90.0f) {
+            zoom = 90.0f;
+        }
+        UpdateProjection();
     }
 
     void Camera::UpdateProjection() {
-        projection = glm::perspective(glm::radians(45.0f), float(aspectRatio.x) / float(aspectRatio.y), 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(zoom), float(aspectRatio.x) / float(aspectRatio.y), 0.1f, 100.0f);
     }
     void Camera::Input(GLFWwindow *window, float speed) {
 
@@ -67,6 +78,10 @@ namespace Core {
     void Camera::ChangeAspectRatio(glm::vec2 aspectRatio) {
         this->aspectRatio = aspectRatio;
        UpdateProjection();
+    }
+
+    void Camera::SetFirstMouse(bool input) {
+        firstMouse = input;
     }
 
     void Camera::ControlCamera() {
