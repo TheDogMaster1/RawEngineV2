@@ -12,9 +12,10 @@ namespace Core {
         glm::vec4 color;
         glm::vec3 position;
     public:
-        LightObj(glm::vec3 color, glm::vec3 position) : color(color, 1), position(position) {};
+        LightObj(glm::vec3 color, glm::vec3 position) : color(color, 1.0f), position(position) {};
         ~LightObj() = default;
         LightObj& operator=(const LightObj& anotherLight);
+        void SetPos(glm::vec3 newPosition);
         glm::vec4 GetColor() const;
         glm::vec3 GetPosition() const;
     };
