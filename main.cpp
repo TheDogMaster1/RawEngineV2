@@ -193,11 +193,25 @@ int main() {
     glClearColor(clearColor.r,
                  clearColor.g, clearColor.b, clearColor.a);
 
+    glm::vec4 objectColor(1, 0, 0, 1);
+
+    GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].color");
+    glm::vec4 lightColor = light1.GetColor();
+    GLint lightPosition0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].position");
+    GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].ambientIntensity");
+    GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
+    glm::vec3 lightPos = light1.GetPosition();
+
+
+    // suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(45.0f));
+    glm::vec3 suzanneScale(5, 5, 1);
+    suzanne.scale(suzanneScale);
+
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
+    GLint mMatrixUniform = glGetUniformLocation(modelShaderProgram, "mMatrix");
     GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
     GLint textureUniform = glGetUniformLocation(textureShaderProgram, "text");
 
-    glm::vec3 lightPos = light1.GetPosition();
     float rotationStrength = 100.0f;
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -218,12 +232,14 @@ int main() {
         if (ImGui::InputFloat3("LightPos", &lightPos[0])) {
             light1.SetPos(lightPos);
         }
+        ImGui::InputFloat3("SuzanneScale", &suzanneScale[0]);
+        ImGui::ColorPicker4("objectColor", &objectColor[0]);
         ImGui::InputFloat("Speed", &cameraSpeed);
         ImGui::End();
 
         processInput(window);
         // suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(rotationStrength) * static_cast<float>(deltaTime));
-
+        // suzanne.translate(glm::vec3(0, 1, 0) * static_cast<float>(deltaTime));
 
         camera.ControlCamera();
         glUseProgram(textureShaderProgram);
@@ -236,19 +252,12 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
 
         glUseProgram(modelShaderProgram);
-        GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].color");
-        glm::vec4 lightColor = light1.GetColor();
-        glUniform4fv(lightColor0Uniform, 1, &lightColor[0]);
-        GLint lightPosition0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].position");
-        glUniform3fv(lightPosition0Uniform, 1, &light1.GetPosition()[0]);
-        GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].ambientIntensity");
-        // float AI = 1.0f;
-        glUniform1f(lightAI0Uniform, 0.5f);
-
-        GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
-        glm::vec4 objectColor(1, 0, 0, 1);
-        glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.getModelMatrix()));
+        glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(suzanne.getModelMatrix()));
+        glUniform4fv(lightColor0Uniform, 1, &lightColor[0]);
+        glUniform3fv(lightPosition0Uniform, 1, &light1.GetPosition()[0]);
+        glUniform1f(lightAI0Uniform, 0.5f);
+        glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
         suzanne.render(drawMode);
         glBindVertexArray(0);
 
