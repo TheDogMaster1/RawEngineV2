@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+
+#include "imgui_internal.h"
 #include "core/mesh.h"
 #include "core/assimpLoader.h"
 #include "core/texture.h"
@@ -188,31 +190,33 @@ int main() {
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
     core::Texture cmgtGatoTexture("textures/CMGaTo_crop.png");
 
-
     glm::vec4 clearColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     glClearColor(clearColor.r,
                  clearColor.g, clearColor.b, clearColor.a);
 
     glm::vec4 objectColor(1, 0, 0, 1);
 
-    GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].color");
-    glm::vec4 lightColor = light1.GetColor();
+    std::string test = "test";
+
+    GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0]"".color");
     GLint lightPosition0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].position");
     GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].ambientIntensity");
     GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
+    GLint objectTextUniform = glGetUniformLocation(modelShaderProgram, "tex");
     glm::vec3 lightPos = light1.GetPosition();
-
+    glm::vec4 lightColor = light1.GetColor();
 
     // suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(45.0f));
-    glm::vec3 suzanneScale(5, 5, 1);
-    suzanne.scale(suzanneScale);
+    glm::vec3 suzanneScale(1, 1, 1);
+    glm::vec3 suzannePosition(0, 0, 0);
+    float suzanneRotation = 0.0f;
+
 
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
     GLint mMatrixUniform = glGetUniformLocation(modelShaderProgram, "mMatrix");
     GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
     GLint textureUniform = glGetUniformLocation(textureShaderProgram, "text");
 
-    float rotationStrength = 100.0f;
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -232,14 +236,23 @@ int main() {
         if (ImGui::InputFloat3("LightPos", &lightPos[0])) {
             light1.SetPos(lightPos);
         }
-        ImGui::InputFloat3("SuzanneScale", &suzanneScale[0]);
-        ImGui::ColorPicker4("objectColor", &objectColor[0]);
+        if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
+            light1.SetColor(lightColor);
+        }
         ImGui::InputFloat("Speed", &cameraSpeed);
         ImGui::End();
+        ImGui::Begin("SuzanneInput");
+        ImGui::InputFloat3("SuzanneScale", &suzanneScale[0]);
+        ImGui::InputFloat3("SuzannePosition", &suzannePosition[0]);
+        ImGui::InputFloat("SuzanneRotation", &suzanneRotation);
+        // ImGui::ColorPicker4("objectColor", &objectColor[0]);
+        ImGui::End();
+
 
         processInput(window);
-        // suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(rotationStrength) * static_cast<float>(deltaTime));
-        // suzanne.translate(glm::vec3(0, 1, 0) * static_cast<float>(deltaTime));
+        suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(suzanneRotation));
+        suzanne.translate(suzannePosition);
+        suzanne.scale(suzanneScale);
 
         camera.ControlCamera();
         glUseProgram(textureShaderProgram);
@@ -257,7 +270,10 @@ int main() {
         glUniform4fv(lightColor0Uniform, 1, &lightColor[0]);
         glUniform3fv(lightPosition0Uniform, 1, &light1.GetPosition()[0]);
         glUniform1f(lightAI0Uniform, 0.5f);
-        glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
+        // glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
+        glActiveTexture(GL_TEXTURE0);
+        glUniform1i(objectTextUniform, 0);
+        glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
         suzanne.render(drawMode);
         glBindVertexArray(0);
 

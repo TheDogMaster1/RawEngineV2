@@ -4,6 +4,7 @@ in vec3 fPos;
 in vec3 fNor;
 in vec2 uv;
 uniform vec4 uniformColor;
+uniform sampler2D tex;
 struct Light{
     vec4 color;
     vec3 position;
@@ -22,9 +23,10 @@ void main()
     vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[0].color;
 //     DiffuseColor.w = 1;
 
+    vec4 albedo = texture(tex, uv);
     vec4 ambientColor = lights[0].color * lights[0].ambientIntensity;
     ambientColor.w = 1;
-   FragColor = (DiffuseColor + ambientColor) * uniformColor;
+   FragColor = (DiffuseColor + ambientColor) * albedo;
 //  FragColor = DiffuseColor;
 //     FragColor = vec4(fNor.x, fNor.y, fNor.z, 1);
 }

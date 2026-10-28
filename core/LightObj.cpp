@@ -13,6 +13,7 @@ namespace Core {
         return *this;
     }
     void LightObj::SetPos(glm::vec3 newPosition) { this->position = newPosition; }
+    void LightObj::SetColor(glm::vec4 newColor) { this->color = newColor; }
     glm::vec4 LightObj::GetColor() const { return  this -> color; }
     glm::vec3 LightObj::GetPosition() const { return this -> position; }
 }

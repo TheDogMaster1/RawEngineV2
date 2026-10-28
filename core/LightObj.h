@@ -16,6 +16,7 @@ namespace Core {
         ~LightObj() = default;
         LightObj& operator=(const LightObj& anotherLight);
         void SetPos(glm::vec3 newPosition);
+        void SetColor(glm::vec4 newColor);
         glm::vec4 GetColor() const;
         glm::vec3 GetPosition() const;
     };
