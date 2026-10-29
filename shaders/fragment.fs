@@ -12,21 +12,27 @@ struct Light{
 };
 uniform Light lights[20];
 
-uniform int lightsAmount = 1;
+uniform int lightsAmount;
 
 
 void main()
 {
-//     vec3 direction = fPos - lights[0].position;
-    vec3 direction = lights[0].position - fPos;
-//    normalize(direction);
-    vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[0].color;
-//     DiffuseColor.w = 1;
+//    FragColor = vec4(0,0, 1,1);
+    vec4 result = vec4(0, 0, 0, 1);
+    for(int i = 0; i < lightsAmount; i++){
+        //     vec3 direction = fPos - lights[0].position;
+        vec3 direction = lights[i].position - fPos;
+        //    normalize(direction);
+        vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[i].color;
+        //     DiffuseColor.w = 1;
 
-    vec4 albedo = texture(tex, uv);
-    vec4 ambientColor = lights[0].color * lights[0].ambientIntensity;
-    ambientColor.w = 1;
-   FragColor = (DiffuseColor + ambientColor) * albedo;
+        vec4 albedo = texture(tex, uv);
+        vec4 ambientColor = lights[i].color * lights[i].ambientIntensity;
+        ambientColor.w = 1;
+        result += (DiffuseColor + ambientColor) * albedo;
+    }
+    FragColor = result;
+
 //  FragColor = DiffuseColor;
 //     FragColor = vec4(fNor.x, fNor.y, fNor.z, 1);
 }

@@ -16,4 +16,5 @@ namespace Core {
     void LightObj::SetColor(glm::vec4 newColor) { this->color = newColor; }
     glm::vec4 LightObj::GetColor() const { return  this -> color; }
     glm::vec3 LightObj::GetPosition() const { return this -> position; }
+    float LightObj::GetAmbientIntensity() const { return this -> ambientIntensity; }
 }

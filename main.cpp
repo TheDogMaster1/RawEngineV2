@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iostream>
 
 #include "imgui_internal.h"
 #include "core/mesh.h"
@@ -43,7 +44,11 @@ GLenum drawMode = GL_TRIANGLES;
 
 Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec2(g_width, g_height));
 
-Core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
+Core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f), 0.1f);
+
+Core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f), 0.1f);
+
+std::vector<Core::LightObj*> lights;
 
 void CameraCallBack(GLFWwindow *window, double xpos, double ypos) {
     if (holdingRMB) {
@@ -196,13 +201,29 @@ int main() {
 
     glm::vec4 objectColor(1, 0, 0, 1);
 
-    std::string test = "test";
+    lights.push_back(&light1);
+    lights.push_back(&light2);
 
-    GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0]"".color");
-    GLint lightPosition0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].position");
-    GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "lights[0].ambientIntensity");
     GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
     GLint objectTextUniform = glGetUniformLocation(modelShaderProgram, "tex");
+    GLint objectLightAmountUniform = glGetUniformLocation(modelShaderProgram, "lightsAmount");
+    glUseProgram(modelShaderProgram);
+    glUniform1i(objectLightAmountUniform, lights.size());
+    glBindVertexArray(0);
+
+    for (int i = 0; i < static_cast<int>(lights.size()); i++) {
+        std::string lightUniformString = "lights[" + std::to_string(i) + "].";
+        std::cout << (lightUniformString+ "Color").c_str() << std::endl;
+        glUseProgram(modelShaderProgram);
+        GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
+        GLint lightPosition0Uniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
+        GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "ambientIntensity").c_str());
+        glUniform4fv(lightColor0Uniform, 1, &lights[i]->GetColor()[0]);
+        glUniform3fv(lightPosition0Uniform, 1, &lights[i]->GetPosition()[0]);
+        glUniform1f(lightAI0Uniform, lights[i]->GetAmbientIntensity());
+        glBindVertexArray(0);
+    }
+
     glm::vec3 lightPos = light1.GetPosition();
     glm::vec4 lightColor = light1.GetColor();
 
@@ -267,9 +288,7 @@ int main() {
         glUseProgram(modelShaderProgram);
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.getModelMatrix()));
         glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(suzanne.getModelMatrix()));
-        glUniform4fv(lightColor0Uniform, 1, &lightColor[0]);
-        glUniform3fv(lightPosition0Uniform, 1, &light1.GetPosition()[0]);
-        glUniform1f(lightAI0Uniform, 0.5f);
+
         // glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
         glActiveTexture(GL_TEXTURE0);
         glUniform1i(objectTextUniform, 0);
