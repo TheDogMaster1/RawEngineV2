@@ -12,8 +12,10 @@ namespace core {
         translateMatrix = glm::translate(modelMatrix, translation);
     }
 
-    void Model::rotate(glm::vec3 axis, float radians) {
-        rotateMatrix = glm::rotate(modelMatrix, radians, axis);
+    void Model::rotate(glm::vec3 rotation) {
+        rotateMatrix = glm::rotate(modelMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)) *
+            glm::rotate(modelMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                glm::rotate(modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
     void Model::scale(glm::vec3 scale) {

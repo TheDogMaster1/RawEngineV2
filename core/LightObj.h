@@ -11,16 +11,14 @@ namespace Core {
     private:
         glm::vec4 color;
         glm::vec3 position;
-        float ambientIntensity;
     public:
-        LightObj(glm::vec3 color, glm::vec3 position, float ambientIntensity) : color(color, 1.0f), position(position), ambientIntensity(ambientIntensity) {};
+        LightObj(glm::vec3 color, glm::vec3 position) : color(color, 1.0f), position(position) {};
         ~LightObj() = default;
         LightObj& operator=(const LightObj& anotherLight);
         void SetPos(glm::vec3 newPosition);
         void SetColor(glm::vec4 newColor);
         glm::vec4 GetColor() const;
         glm::vec3 GetPosition() const;
-        float GetAmbientIntensity() const;
     };
 }
 

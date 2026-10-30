@@ -5,10 +5,10 @@ in vec3 fNor;
 in vec2 uv;
 uniform vec4 uniformColor;
 uniform sampler2D tex;
+uniform float ambientIntensity;
 struct Light{
     vec4 color;
     vec3 position;
-    float ambientIntensity;
 };
 uniform Light lights[20];
 
@@ -26,10 +26,12 @@ void main()
         vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[i].color;
         //     DiffuseColor.w = 1;
 
+        vec4 attenuation = DiffuseColor / (1 + 1 * length(direction) + 0 * length(direction));
+
         vec4 albedo = texture(tex, uv);
-        vec4 ambientColor = lights[i].color * lights[i].ambientIntensity;
+        vec4 ambientColor = vec4(1, 1, 1, 1) * ambientIntensity;
         ambientColor.w = 1;
-        result += (DiffuseColor + ambientColor) * albedo;
+        result += (attenuation + ambientColor) * albedo;
     }
     FragColor = result;
 

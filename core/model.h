@@ -18,7 +18,7 @@ namespace core {
         void render(GLenum drawMode);
 
         void translate(glm::vec3 translation);
-        void rotate(glm::vec3 axis, float radians);
+        void rotate(glm::vec3 rotation);
         void scale(glm::vec3 scale);
         glm::mat4 getModelMatrix() const;
     };
