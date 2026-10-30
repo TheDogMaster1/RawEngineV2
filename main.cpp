@@ -13,6 +13,7 @@
 #include "core/texture.h"
 #include "core/Camera.h"
 #include "core/LightObj.h"
+#include "core/Transform.h"
 //#define MAC_CLION
 #define VSTUDIO
 
@@ -44,15 +45,15 @@ GLenum drawMode = GL_TRIANGLES;
 
 Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec2(g_width, g_height));
 
-Core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
+core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f), 0);
 
-Core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f));
+core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f),0);
 
-Core::LightObj light3(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, 0.0f));
+core::LightObj light3(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, 0.0f), 0);
 
 float ambientIntensity = 0.1f;
 
-std::vector<Core::LightObj*> lights;
+std::vector<core::LightObj*> lights;
 
 void CameraCallBack(GLFWwindow *window, double xpos, double ypos) {
     if (holdingRMB) {
@@ -192,8 +193,8 @@ int main() {
     core::Mesh quad = core::Mesh::generateQuad();
     core::Model quadModel({quad});
 
-    quadModel.translate(glm::vec3(0,0,-2.5));
-    quadModel.scale(glm::vec3(5, 5, 1));
+    quadModel.transform.Translate(glm::vec3(0,0,-2.5));
+    quadModel.transform.Scale(glm::vec3(5, 5, 1));
 
 
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
@@ -264,39 +265,59 @@ int main() {
 
         for (int i = 0; i < static_cast<int>(lights.size()); i++) {
 
-            glm::vec3 lightPos = lights[i]->GetPosition();
+
             glm::vec4 lightColor = lights[i]->GetColor();
+            float lightType = lights[i]->GetType();
 
             std::string lightGuiName = "Light" + std::to_string(i);
             ImGui::Begin(lightGuiName.c_str());
-            if (ImGui::InputFloat3("LightPos", &lightPos[0])) {
-                lights[i]->SetPos(lightPos);
+            if (lightType == 0) {
+                glm::vec3 lightPos = lights[i]->transform.GetPosition();
+                if (ImGui::InputFloat3("LightPos", &lightPos[0])) {
+                    lights[i]->transform.Translate(lightPos);
+                }
+            }
+            else if (lightType == 1) {
+                glm::vec3 lightDir = lights[i]->transform.GetRotation();
+                if (ImGui::InputFloat3("LightDir", &lightDir[0])) {
+                    lights[i]->transform.Rotate(lightDir);
+                }
             }
             if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
                 lights[i]->SetColor(lightColor);
             }
+           if ( ImGui::InputFloat("LightType", &lightType)) {
+               lights[i]->SetType(lightType);
+           }
             ImGui::End();
             std::string lightUniformString = "lights[" + std::to_string(i) + "].";
             glUseProgram(modelShaderProgram);
-            GLint lightColor0Uniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
-            GLint lightPosition0Uniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
+            GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
+            GLint lightPositionUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
+            GLint lightTypeUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "type").c_str());
             GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "ambientIntensity");
-            glUniform4fv(lightColor0Uniform, 1, &lights[i]->GetColor()[0]);
-            glUniform3fv(lightPosition0Uniform, 1, &lights[i]->GetPosition()[0]);
+            glUniform1f(lightTypeUniform, lightType);
+            glUniform4fv(lightColorUniform, 1, &lights[i]->GetColor()[0]);
+            if (lightType == 0) {
+                glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetPosition()[0]);
+            }
+            else if (lightType == 1) {
+                glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetFowDir()[0]);
+            }
             glUniform1f(lightAI0Uniform, ambientIntensity);
             glBindVertexArray(0);
         }
 
 
         processInput(window);
-        suzanne.rotate(suzanneRotation);
-        suzanne.translate(suzannePosition);
-        suzanne.scale(suzanneScale);
+        suzanne.transform.Rotate(suzanneRotation);
+        suzanne.transform.Translate(suzannePosition);
+        suzanne.transform.Scale(suzanneScale);
 
         camera.ControlCamera();
         glUseProgram(modelShaderProgram);
-        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * quadModel.getModelMatrix()));
-        glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(quadModel.getModelMatrix()));
+        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * quadModel.transform.getModelMatrix()));
+        glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(quadModel.transform.getModelMatrix()));
         glActiveTexture(GL_TEXTURE0);
         glUniform1i(objectTextUniform, 0);
         glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
@@ -305,8 +326,8 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
 
         glUseProgram(modelShaderProgram);
-        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.getModelMatrix()));
-        glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(suzanne.getModelMatrix()));
+        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.transform.getModelMatrix()));
+        glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(suzanne.transform.getModelMatrix()));
 
         // glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
         glActiveTexture(GL_TEXTURE0);
