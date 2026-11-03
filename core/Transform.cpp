@@ -10,19 +10,19 @@ namespace core {
 
     void Transform::Translate(const glm::vec3 translation) {
         this->position = translation;
-        translateMatrix = glm::translate(modelMatrix, translation);
+        translateMatrix = glm::translate(baseMatrix, translation);
     }
 
     void Transform::Rotate(const glm::vec3 rotation) {
         this->rotation = rotation;
-        rotateMatrix = glm::rotate(modelMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)) *
-            glm::rotate(modelMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                glm::rotate(modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        rotateMatrix = glm::rotate(baseMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)) *
+            glm::rotate(baseMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                glm::rotate(baseMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
     void Transform::Scale(const glm::vec3 scale) {
         this->scale = scale;
-        scaleMatrix = glm::scale(modelMatrix, scale);
+        scaleMatrix = glm::scale(baseMatrix, scale);
     }
 
     glm::mat4 Transform::getModelMatrix() const {

@@ -11,7 +11,7 @@
 namespace core {
     class Transform {
     private:
-        glm::mat4 modelMatrix;
+        glm::mat4 baseMatrix;
         glm::mat4 scaleMatrix = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         glm::mat4 rotateMatrix;
         glm::mat4 translateMatrix = glm::mat4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1);
@@ -19,7 +19,7 @@ namespace core {
         glm::vec3 rotation;
         glm::vec3 scale;
     public:
-        Transform() : modelMatrix(1), rotateMatrix(1), scale(1) {}
+        Transform() : baseMatrix(1), rotateMatrix(1), scale(1) {}
 
         void Translate(glm::vec3 translation);
         void Rotate(glm::vec3 rotation);
