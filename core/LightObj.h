@@ -16,8 +16,12 @@ namespace core {
     public:
         Transform transform;
         LightObj(glm::vec3 color, glm::vec3 position, float type) : color(color, 1.0f), type(type) {
-            transform.Translate(position);
-        };
+            transform.position = position;
+        }
+        LightObj() {
+            color = glm::vec4(1.0f);
+            type = 0.0f;
+        }
         ~LightObj() = default;
         LightObj& operator=(const LightObj& anotherLight);
         void SetPos(glm::vec3 newPosition);

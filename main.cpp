@@ -207,8 +207,8 @@ int main() {
     glm::vec4 objectColor(1, 0, 0, 1);
 
     lights.push_back(&light1);
-    lights.push_back(&light2);
-    lights.push_back(&light3);
+    // lights.push_back(&light2);
+    // lights.push_back(&light3);
 
     GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
     GLint objectTextUniform = glGetUniformLocation(modelShaderProgram, "tex");
@@ -216,15 +216,6 @@ int main() {
     glUseProgram(modelShaderProgram);
     glUniform1i(objectLightAmountUniform, lights.size());
     glBindVertexArray(0);
-
-    // glm::vec3 lightPos = light1.GetPosition();
-    // glm::vec4 lightColor = light1.GetColor();
-
-    // suzanne.rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(45.0f));
-    glm::vec3 suzanneScale(1, 1, 1);
-    glm::vec3 suzannePosition(0, 0, 0);
-    glm::vec3 suzanneRotation(0, 1, 0);
-
 
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
     GLint mMatrixUniform = glGetUniformLocation(modelShaderProgram, "mMatrix");
@@ -253,15 +244,23 @@ int main() {
         // if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
         //     light1.SetColor(lightColor);
         // }
-        ImGui::InputFloat("Speed", &cameraSpeed);
-        ImGui::InputFloat("Ambient Intensity", &ambientIntensity);
+        ImGui::InputFloat("Speed", &cameraSpeed, 1);
+        ImGui::SliderFloat("Ambient Intensity", &ambientIntensity, 0, 1);
         ImGui::End();
         ImGui::Begin("SuzanneInput");
-        ImGui::InputFloat3("SuzanneScale", &suzanneScale[0]);
-        ImGui::InputFloat3("SuzannePosition", &suzannePosition[0]);
-        ImGui::InputFloat3("SuzanneRotation", &suzanneRotation[0]);
+
+        if (ImGui::InputFloat3("SuzanneScale", &suzanne.transform.scale[0])) {
+            suzanne.transform.Scale(suzanne.transform.scale);
+        }
+        if (ImGui::InputFloat3("SuzannePosition", &suzanne.transform.position[0])) {
+            suzanne.transform.Translate(suzanne.transform.position);
+        }
+        if (ImGui::InputFloat3("SuzanneRotation", &suzanne.transform.rotation[0])) {
+            suzanne.transform.Rotate(suzanne.transform.rotation);
+        }
         // ImGui::ColorPicker4("objectColor", &objectColor[0]);
         ImGui::End();
+
 
         for (int i = 0; i < static_cast<int>(lights.size()); i++) {
 
@@ -269,18 +268,18 @@ int main() {
             glm::vec4 lightColor = lights[i]->GetColor();
             float lightType = lights[i]->GetType();
 
-            std::string lightGuiName = "Light" + std::to_string(i);
+            std::string lightGuiName = "Light" + std::to_string(i+1);
             ImGui::Begin(lightGuiName.c_str());
             if (lightType == 0) {
-                glm::vec3 lightPos = lights[i]->transform.GetPosition();
-                if (ImGui::InputFloat3("LightPos", &lightPos[0])) {
-                    lights[i]->transform.Translate(lightPos);
+                // glm::vec3 lightPos = lights[i]->transform.GetPosition();
+                if (ImGui::InputFloat3("LightPos", &lights[i]->transform.position[0])) {
+                    lights[i]->transform.Translate(lights[i]->transform.position);
                 }
             }
             else if (lightType == 1) {
-                glm::vec3 lightDir = lights[i]->transform.GetRotation();
-                if (ImGui::InputFloat3("LightDir", &lightDir[0])) {
-                    lights[i]->transform.Rotate(lightDir);
+                // glm::vec3 lightDir = lights[i]->transform.GetRotation();
+                if (ImGui::InputFloat3("LightDir", &lights[i]->transform.rotation[0])) {
+                    lights[i]->transform.Rotate(lights[i]->transform.rotation);
                 }
             }
             if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
@@ -295,24 +294,19 @@ int main() {
             GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
             GLint lightPositionUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
             GLint lightTypeUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "type").c_str());
-            GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "ambientIntensity");
             glUniform1f(lightTypeUniform, lightType);
             glUniform4fv(lightColorUniform, 1, &lights[i]->GetColor()[0]);
             if (lightType == 0) {
-                glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetPosition()[0]);
+                glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.position[0]);
             }
             else if (lightType == 1) {
                 glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetFowDir()[0]);
             }
-            glUniform1f(lightAI0Uniform, ambientIntensity);
             glBindVertexArray(0);
         }
 
 
         processInput(window);
-        suzanne.transform.Rotate(suzanneRotation);
-        suzanne.transform.Translate(suzannePosition);
-        suzanne.transform.Scale(suzanneScale);
 
         camera.ControlCamera();
         glUseProgram(modelShaderProgram);
@@ -333,6 +327,8 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glUniform1i(objectTextUniform, 0);
         glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
+        GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "ambientIntensity");
+        glUniform1f(lightAI0Uniform, ambientIntensity);
         suzanne.render(drawMode);
         glBindVertexArray(0);
 

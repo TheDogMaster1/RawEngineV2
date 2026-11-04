@@ -20,6 +20,7 @@ void main()
 {
 //    FragColor = vec4(0,0, 1,1);
     vec4 result = vec4(0, 0, 0, 1);
+vec4 albedo = texture(tex, uv);
     for(int i = 0; i < lightsAmount; i++){
         if (lights[i].type == 0) {
             //     vec3 direction = fPos - lights[0].position;
@@ -30,10 +31,7 @@ void main()
 
             vec4 attenuation = DiffuseColor / (1 + .5 * length(direction) + .5 * length(direction));
 
-            vec4 albedo = texture(tex, uv);
-            vec4 ambientColor = vec4(1, 1, 1, 1) * ambientIntensity;
-            ambientColor.w = 1;
-            result += (attenuation + ambientColor) * albedo;
+            result += attenuation * albedo;
         }
         else if(lights[i].type == 1){
             vec3 direction = lights[i].position;
@@ -41,15 +39,12 @@ void main()
             vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[i].color;
             //     DiffuseColor.w = 1;
 
-            vec4 albedo = texture(tex, uv);
-
             result += DiffuseColor * albedo;
         }
     }
-vec4 ambientColor = vec4(1, 1, 1, 1) * ambientIntensity;
+vec4 ambientColor =ambientIntensity * albedo;
 ambientColor.w = 1;
     FragColor = clamp(result + ambientColor, 0, 1);
-
 //  FragColor = DiffuseColor;
 //     FragColor = vec4(fNor.x, fNor.y, fNor.z, 1);
 }
