@@ -45,11 +45,11 @@ GLenum drawMode = GL_TRIANGLES;
 
 Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec2(g_width, g_height));
 
-core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f), 0);
+core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f), 256, 0);
 
-core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f),0);
+core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f), 256, 0);
 
-core::LightObj light3(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, 0.0f), 0);
+core::LightObj light3(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, 0.0f), 256, 0);
 
 float ambientIntensity = 0.1f;
 
@@ -199,6 +199,7 @@ int main() {
 
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
     core::Texture cmgtGatoTexture("textures/CMGaTo_crop.png");
+    core::Texture donQuixoteTexture("Textures/LCB_Sinner_Don_Quixote_Profile.png");
 
     glm::vec4 clearColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     glClearColor(clearColor.r,
@@ -219,6 +220,7 @@ int main() {
 
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
     GLint mMatrixUniform = glGetUniformLocation(modelShaderProgram, "mMatrix");
+    GLint camPosUniform = glGetUniformLocation(modelShaderProgram, "camPos");
     GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
     GLint textureUniform = glGetUniformLocation(textureShaderProgram, "text");
 
@@ -266,6 +268,7 @@ int main() {
 
 
             glm::vec4 lightColor = lights[i]->GetColor();
+            float lightSpecInt = lights[i]->GetSpecularIntensity();
             float lightType = lights[i]->GetType();
 
             std::string lightGuiName = "Light" + std::to_string(i+1);
@@ -282,6 +285,9 @@ int main() {
                     lights[i]->transform.Rotate(lights[i]->transform.rotation);
                 }
             }
+            if (ImGui::InputFloat("Specular Intensity", &lightSpecInt)) {
+                lights[i]->SetSpecularIntensity(lightSpecInt);
+            }
             if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
                 lights[i]->SetColor(lightColor);
             }
@@ -293,6 +299,7 @@ int main() {
             glUseProgram(modelShaderProgram);
             GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
             GLint lightPositionUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
+            GLint lightSpecIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "specularIntensity").c_str());
             GLint lightTypeUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "type").c_str());
             glUniform1f(lightTypeUniform, lightType);
             glUniform4fv(lightColorUniform, 1, &lights[i]->GetColor()[0]);
@@ -302,6 +309,7 @@ int main() {
             else if (lightType == 1) {
                 glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetFowDir()[0]);
             }
+            glUniform1f(lightSpecIntensityUniform, lights[i]->GetSpecularIntensity());
             glBindVertexArray(0);
         }
 
@@ -322,11 +330,11 @@ int main() {
         glUseProgram(modelShaderProgram);
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.transform.getModelMatrix()));
         glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(suzanne.transform.getModelMatrix()));
-
+        glUniform3fv(camPosUniform, 1, &camera.GetCameraPos()[0]);
         // glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
         glActiveTexture(GL_TEXTURE0);
         glUniform1i(objectTextUniform, 0);
-        glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
+        glBindTexture(GL_TEXTURE_2D, donQuixoteTexture.getId());
         GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "ambientIntensity");
         glUniform1f(lightAI0Uniform, ambientIntensity);
         suzanne.render(drawMode);
