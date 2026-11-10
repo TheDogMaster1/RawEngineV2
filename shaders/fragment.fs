@@ -3,13 +3,16 @@ out vec4 FragColor;
 in vec3 fPos;
 in vec3 fNor;
 in vec2 uv;
+in mat3 TBN;
 uniform vec4 uniformColor;
-uniform sampler2D tex;
+uniform sampler2D difTex;
+uniform sampler2D normalTex;
 uniform float ambientIntensity;
 uniform vec3 camPos;
 struct Light{
     vec4 color;
     vec3 position;
+    float intensity;
     float specularIntensity;
     float type;
 };
@@ -22,15 +25,18 @@ void main()
 {
 //    FragColor = vec4(0,0, 1,1);
     vec4 result = vec4(0, 0, 0, 1);
-vec4 albedo = texture(tex, uv);
+    vec4 albedo = texture(difTex, uv);
+    vec3 normalColor = texture(normalTex, uv).rgb;
+    normalColor = normalColor * 2.0 - 1.0;
 
     for(int i = 0; i < lightsAmount; i++){
         if (lights[i].type == 0) {
             //     vec3 direction = fPos - lights[0].position;
             vec3 direction = lights[i].position - fPos;
+            vec3 T_direction = TBN * direction;
             //    normalize(direction);
-            vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[i].color * albedo;
-            //     DiffuseColor.w = 1;
+            vec4 DiffuseColor = max(dot(normalize(normalColor), normalize(T_direction)), 0) * lights[i].color * albedo * lights[i].intensity;
+                 DiffuseColor.w = 0;
 
             vec4 attenuation = DiffuseColor / (1 + 0.5 * length(direction) + 0.2 * length(direction));
 
@@ -39,12 +45,16 @@ vec4 albedo = texture(tex, uv);
 
             vec4 specular = pow(max(dot(reflection, camDir), 0), lights[i].specularIntensity) * lights[i].color;
             specular.w = 1;
+            if (lights[i].specularIntensity == 0){
+                specular = vec4(0);
+            }
             result += attenuation + specular;
         }
         else if(lights[i].type == 1){
             vec3 direction = lights[i].position;
+            vec3 T_direction = TBN * direction;
             //    normalize(direction);
-            vec4 DiffuseColor = max(dot(normalize(fNor), normalize(direction)), 0) * lights[i].color * albedo;
+            vec4 DiffuseColor = max(dot(normalize(normalColor), normalize(T_direction)), 0) * lights[i].color * albedo;
             //     DiffuseColor.w = 1;
 
             result += DiffuseColor;

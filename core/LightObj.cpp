@@ -16,10 +16,12 @@ namespace core {
     }
     void LightObj::SetPos(glm::vec3 newPosition) { transform.Translate(newPosition); }
     void LightObj::SetColor(glm::vec4 newColor) { this->color = newColor; }
+    void LightObj::SetIntensity(float newIntensity) { this->intensity = newIntensity; }
     void LightObj::SetSpecularIntensity(float newSpecularIntensity) { this->specularIntensity = newSpecularIntensity; }
     void LightObj::SetType(float newType){ this->type = newType; }
     float LightObj::GetType() const { return this -> type; }
     glm::vec4 LightObj::GetColor() const { return  this -> color; }
+    float LightObj::GetIntensity() const { return this -> intensity; }
     float LightObj::GetSpecularIntensity() const { return  this -> specularIntensity; }
 
 }

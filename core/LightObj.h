@@ -12,15 +12,17 @@ namespace core {
     class LightObj {
     private:
         glm::vec4 color;
+        float intensity;
         float specularIntensity;
         float type;
     public:
         Transform transform;
-        LightObj(glm::vec3 color, glm::vec3 position, float specularIntensity, float type) : color(color, 1.0f), specularIntensity(specularIntensity), type(type) {
+        LightObj(glm::vec3 color, glm::vec3 position, float intensity, float specularIntensity, float type) : color(color, 1.0f), intensity(intensity), specularIntensity(specularIntensity), type(type) {
             transform.position = position;
         }
         LightObj() {
             color = glm::vec4(1.0f);
+            intensity = 1.0f;
             specularIntensity = 0.0f;
             type = 0.0f;
         }
@@ -28,10 +30,12 @@ namespace core {
         LightObj& operator=(const LightObj& anotherLight);
         void SetPos(glm::vec3 newPosition);
         void SetColor(glm::vec4 newColor);
+        void SetIntensity(float newIntensity);
         void SetSpecularIntensity(float newSpecularIntensity);
         void SetType(float newType);
         float GetType() const;
         glm::vec4 GetColor() const;
+        float GetIntensity() const;
         float GetSpecularIntensity() const;
     };
 }

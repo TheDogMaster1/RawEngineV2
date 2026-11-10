@@ -27,6 +27,6 @@ namespace core {
     }
     glm::vec3 Transform::GetFowDir() const {
         // return glm::vec3(rotateMatrix[0][2], rotateMatrix[1][2], rotateMatrix[2][2]);
-        return glm::vec3(rotateMatrix[2]);
+        return glm::vec3(-rotateMatrix[2]);
     }
 }

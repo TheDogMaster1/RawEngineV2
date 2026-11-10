@@ -45,11 +45,11 @@ GLenum drawMode = GL_TRIANGLES;
 
 Core::Camera camera(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec2(g_width, g_height));
 
-core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f), 256, 0);
+core::LightObj light1(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(-2.0f, 0.0f, 0.0f), 1, 256, 0);
 
-core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f), 256, 0);
+core::LightObj light2(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.0f, 0.0f), 1, 256, 0);
 
-core::LightObj light3(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, 0.0f), 256, 0);
+core::LightObj light3(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, 0.0f), 1, 256, 0);
 
 float ambientIntensity = 0.1f;
 
@@ -116,6 +116,35 @@ GLuint generateShader(const std::string &shaderPath, GLuint shaderType) {
     }
     return shader;
 }
+
+
+void LoadTextures(const unsigned int shaderProgram, core::Texture &difTexture, core::Texture &normalTexture ) {
+    GLint difTextureUniform = glGetUniformLocation(shaderProgram, "difTex");
+    GLint normalTextureUniform = glGetUniformLocation(shaderProgram, "normalTex");
+    // glUseProgram(shaderProgram);
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(difTextureUniform, 0);
+    glBindTexture(GL_TEXTURE_2D, difTexture.getId());
+    glActiveTexture(GL_TEXTURE1);
+    glUniform1i(normalTextureUniform, 1);
+    glBindTexture(GL_TEXTURE_2D, normalTexture.getId());
+    // glBindVertexArray(0);
+}
+
+void ChangeObjectTransforms(core::Model* object,const std::string name) {
+    ImGui::Begin((name + "Input").c_str());
+    if (ImGui::InputFloat3((name + "Scale").c_str(), &object->transform.scale[0])) {
+        object->transform.Scale(object->transform.scale);
+    }
+    if (ImGui::InputFloat3((name + "Position").c_str(), &object->transform.position[0])) {
+        object->transform.Translate(object->transform.position);
+    }
+    if (ImGui::InputFloat3((name + "Rotation").c_str(), &object->transform.rotation[0])) {
+        object->transform.Rotate(object->transform.rotation);
+    }
+    ImGui::End();
+}
+
 
 int main() {
     glfwInit();
@@ -194,12 +223,17 @@ int main() {
     core::Model quadModel({quad});
 
     quadModel.transform.Translate(glm::vec3(0,0,-2.5));
+    quadModel.transform.Rotate(glm::vec3(0, 0, 180));
     quadModel.transform.Scale(glm::vec3(5, 5, 1));
 
 
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
+    core::Model sphere = core::AssimpLoader::loadModel("models/BlenderSphere.obj");
     core::Texture cmgtGatoTexture("textures/CMGaTo_crop.png");
     core::Texture donQuixoteTexture("Textures/LCB_Sinner_Don_Quixote_Profile.png");
+    core::Texture donQuixoteNormalTexture("Textures/LCB_Sinner_Don_Quixote_Profile_normal.png");
+    core::Texture brickDifTexture("Textures/red_brick_diff_4k.png");
+    core::Texture brickNormalTexture("Textures/red_brick_nor_gl_4k.png");
 
     glm::vec4 clearColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     glClearColor(clearColor.r,
@@ -208,11 +242,11 @@ int main() {
     glm::vec4 objectColor(1, 0, 0, 1);
 
     lights.push_back(&light1);
-    // lights.push_back(&light2);
-    // lights.push_back(&light3);
+    lights.push_back(&light2);
+    lights.push_back(&light3);
 
     GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
-    GLint objectTextUniform = glGetUniformLocation(modelShaderProgram, "tex");
+
     GLint objectLightAmountUniform = glGetUniformLocation(modelShaderProgram, "lightsAmount");
     glUseProgram(modelShaderProgram);
     glUniform1i(objectLightAmountUniform, lights.size());
@@ -249,25 +283,15 @@ int main() {
         ImGui::InputFloat("Speed", &cameraSpeed, 1);
         ImGui::SliderFloat("Ambient Intensity", &ambientIntensity, 0, 1);
         ImGui::End();
-        ImGui::Begin("SuzanneInput");
-
-        if (ImGui::InputFloat3("SuzanneScale", &suzanne.transform.scale[0])) {
-            suzanne.transform.Scale(suzanne.transform.scale);
-        }
-        if (ImGui::InputFloat3("SuzannePosition", &suzanne.transform.position[0])) {
-            suzanne.transform.Translate(suzanne.transform.position);
-        }
-        if (ImGui::InputFloat3("SuzanneRotation", &suzanne.transform.rotation[0])) {
-            suzanne.transform.Rotate(suzanne.transform.rotation);
-        }
-        // ImGui::ColorPicker4("objectColor", &objectColor[0]);
-        ImGui::End();
+        ChangeObjectTransforms(&sphere, "Sphere");
+        ChangeObjectTransforms(&suzanne, "Suzanne");
 
 
         for (int i = 0; i < static_cast<int>(lights.size()); i++) {
 
 
             glm::vec4 lightColor = lights[i]->GetColor();
+            float lightIntensity = lights[i]->GetIntensity();
             float lightSpecInt = lights[i]->GetSpecularIntensity();
             float lightType = lights[i]->GetType();
 
@@ -285,6 +309,9 @@ int main() {
                     lights[i]->transform.Rotate(lights[i]->transform.rotation);
                 }
             }
+            if (ImGui::InputFloat("Intensity", &lightIntensity)) {
+                lights[i]->SetIntensity(lightIntensity);
+            }
             if (ImGui::InputFloat("Specular Intensity", &lightSpecInt)) {
                 lights[i]->SetSpecularIntensity(lightSpecInt);
             }
@@ -299,6 +326,7 @@ int main() {
             glUseProgram(modelShaderProgram);
             GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
             GLint lightPositionUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
+            GLint lightIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "intensity").c_str());
             GLint lightSpecIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "specularIntensity").c_str());
             GLint lightTypeUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "type").c_str());
             glUniform1f(lightTypeUniform, lightType);
@@ -309,10 +337,10 @@ int main() {
             else if (lightType == 1) {
                 glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetFowDir()[0]);
             }
+            glUniform1f(lightIntensityUniform, lights[i]->GetIntensity());
             glUniform1f(lightSpecIntensityUniform, lights[i]->GetSpecularIntensity());
             glBindVertexArray(0);
         }
-
 
         processInput(window);
 
@@ -320,21 +348,26 @@ int main() {
         glUseProgram(modelShaderProgram);
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * quadModel.transform.getModelMatrix()));
         glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(quadModel.transform.getModelMatrix()));
-        glActiveTexture(GL_TEXTURE0);
-        glUniform1i(objectTextUniform, 0);
-        glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
+        // glActiveTexture(GL_TEXTURE0);
+        // glUniform1i(objectTextUniform, 0);
+        // glBindTexture(GL_TEXTURE_2D, cmgtGatoTexture.getId());
+        LoadTextures(modelShaderProgram,donQuixoteTexture, brickNormalTexture);
         quadModel.render(drawMode);
+        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * sphere.transform.getModelMatrix()));
+        glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(sphere.transform.getModelMatrix()));
+        sphere.render(drawMode);
         glBindVertexArray(0);
-        glActiveTexture(GL_TEXTURE0);
 
         glUseProgram(modelShaderProgram);
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * suzanne.transform.getModelMatrix()));
         glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(suzanne.transform.getModelMatrix()));
         glUniform3fv(camPosUniform, 1, &camera.GetCameraPos()[0]);
         // glUniform4fv(objectColor0Uniform, 1, &objectColor[0]);
-        glActiveTexture(GL_TEXTURE0);
-        glUniform1i(objectTextUniform, 0);
-        glBindTexture(GL_TEXTURE_2D, donQuixoteTexture.getId());
+        // glActiveTexture(GL_TEXTURE0);
+        // glUniform1i(objectTextUniform, 0);
+        // glBindTexture(GL_TEXTURE_2D, donQuixoteTexture.getId());
+        LoadTextures(modelShaderProgram, brickDifTexture, brickNormalTexture);
+
         GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "ambientIntensity");
         glUniform1f(lightAI0Uniform, ambientIntensity);
         suzanne.render(drawMode);

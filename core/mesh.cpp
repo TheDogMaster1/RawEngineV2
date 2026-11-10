@@ -22,6 +22,10 @@ namespace core {
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, normal));
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, uv));
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, tangent));
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, bitangent));
         glBindVertexArray(0);
     }
 
@@ -51,12 +55,28 @@ namespace core {
                 glm::vec2(1, 1),
                 glm::vec2(0, 1)
         };
+        const glm::vec3 tangents[] = {
+            glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f)
+        };
+        const glm::vec3 bitangents[] = {
+            glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f),
+             glm::vec3(0.0f, 0.0f, 1.0f)
+        };
         const std::vector<GLuint> indices = {0, 1, 2, 3, 4, 5};
 
         std::vector<Vertex> vertexVector;
         vertexVector.reserve(6);
         for (int i = 0; i < 6; ++i) {
-            vertexVector.emplace_back(pos[i], normals[i], uvs[i]);
+            vertexVector.emplace_back(pos[i], normals[i], uvs[i], tangents[i], bitangents[i]);
         }
 
         return Mesh(vertexVector, indices);
