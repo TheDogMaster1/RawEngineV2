@@ -195,7 +195,7 @@ int main() {
 
     const GLuint modelVertexShader = generateShader("shaders/modelVertex.vs", GL_VERTEX_SHADER);
     const GLuint fragmentShader = generateShader("shaders/fragment.fs", GL_FRAGMENT_SHADER);
-    const GLuint textureShader = generateShader("shaders/texture.fs", GL_FRAGMENT_SHADER);
+    const GLuint lightObjShader = generateShader("shaders/lightObj.frag", GL_FRAGMENT_SHADER);
 
     int success;
     char infoLog[512];
@@ -208,19 +208,19 @@ int main() {
         glGetProgramInfoLog(modelShaderProgram, 512, NULL, infoLog);
         printf("Error! Making Shader Program: %s\n", infoLog);
     }
-    const unsigned int textureShaderProgram = glCreateProgram();
-    glAttachShader(textureShaderProgram, modelVertexShader);
-    glAttachShader(textureShaderProgram, textureShader);
-    glLinkProgram(textureShaderProgram);
-    glGetProgramiv(textureShaderProgram, GL_LINK_STATUS, &success);
+    const unsigned int lightObjShaderProgram = glCreateProgram();
+    glAttachShader(lightObjShaderProgram, modelVertexShader);
+    glAttachShader(lightObjShaderProgram, lightObjShader);
+    glLinkProgram(lightObjShaderProgram);
+    glGetProgramiv(lightObjShaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(textureShaderProgram, 512, NULL, infoLog);
+        glGetProgramInfoLog(lightObjShaderProgram, 512, NULL, infoLog);
         printf("Error! Making Shader Program: %s\n", infoLog);
     }
 
     glDeleteShader(modelVertexShader);
     glDeleteShader(fragmentShader);
-    glDeleteShader(textureShader);
+    glDeleteShader(lightObjShader);
 
     core::Mesh quad = core::Mesh::generateQuad();
     core::Model quadModel({quad});
@@ -232,6 +232,7 @@ int main() {
 
     core::Model suzanne = core::AssimpLoader::loadModel("models/nonormalmonkey.obj");
     core::Model sphere = core::AssimpLoader::loadModel("models/BlenderSphere.obj");
+    core::Model lightSphere = core::AssimpLoader::loadModel("models/BlenderSphere.obj");
     core::Texture cmgtGatoTexture("textures/CMGaTo_crop.png");
     core::Texture donQuixoteTexture("Textures/LCB_Sinner_Don_Quixote_Profile.png");
     core::Texture donQuixoteNormalTexture("Textures/LCB_Sinner_Don_Quixote_Profile_normal.png");
@@ -242,13 +243,9 @@ int main() {
     glClearColor(clearColor.r,
                  clearColor.g, clearColor.b, clearColor.a);
 
-    glm::vec4 objectColor(1, 0, 0, 1);
-
     lights.push_back(&light1);
     lights.push_back(&light2);
     lights.push_back(&light3);
-
-    GLint objectColor0Uniform = glGetUniformLocation(modelShaderProgram, "uniformColor");
 
     GLint objectLightAmountUniform = glGetUniformLocation(modelShaderProgram, "lightsAmount");
     glUseProgram(modelShaderProgram);
@@ -257,9 +254,9 @@ int main() {
 
     GLint mvpMatrixUniform = glGetUniformLocation(modelShaderProgram, "mvpMatrix");
     GLint mMatrixUniform = glGetUniformLocation(modelShaderProgram, "mMatrix");
+    GLint lightMvpMatrixUniform = glGetUniformLocation(lightObjShaderProgram, "mvpMatrix");
+    GLint lightMMatrixUniform = glGetUniformLocation(lightObjShaderProgram, "mMatrix");
     GLint camPosUniform = glGetUniformLocation(modelShaderProgram, "camPos");
-    GLint textureModelUniform = glGetUniformLocation(textureShaderProgram, "mvpMatrix");
-    GLint textureUniform = glGetUniformLocation(textureShaderProgram, "text");
 
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -287,67 +284,89 @@ int main() {
         // }
         ImGui::InputFloat("Speed", &cameraSpeed, 1);
         ImGui::SliderFloat("Ambient Intensity", &ambientIntensity, 0, 1);
-        ChangeObjectTransforms(&sphere, "Sphere");
-        ChangeObjectTransforms(&suzanne, "Suzanne");
-        ImGui::End();
+        ImGui::BeginTabBar("Stuff");
+        if (ImGui::BeginTabItem("Objects")) {
+            ChangeObjectTransforms(&sphere, "Sphere");
+            ChangeObjectTransforms(&suzanne, "Suzanne");
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+            for (int i = 0; i < static_cast<int>(lights.size()); i++) {
+                ImGui::PushID(i);
 
+                glm::vec4 lightColor = lights[i]->GetColor();
+                float lightIntensity = lights[i]->GetIntensity();
+                float lightSpecInt = lights[i]->GetSpecularIntensity();
+                float lightType = lights[i]->GetType();
 
-        ImGui::Begin("Light controls");
-        for (int i = 0; i < static_cast<int>(lights.size()); i++) {
-
-
-            glm::vec4 lightColor = lights[i]->GetColor();
-            float lightIntensity = lights[i]->GetIntensity();
-            float lightSpecInt = lights[i]->GetSpecularIntensity();
-            float lightType = lights[i]->GetType();
-
-            std::string lightGuiName = "Light" + std::to_string(i+1);
-            if (ImGui::CollapsingHeader(lightGuiName.c_str())) {
-                if (lightType == 0) {
-                    // glm::vec3 lightPos = lights[i]->transform.GetPosition();
-                    if (ImGui::InputFloat3("LightPos", &lights[i]->transform.position[0])) {
-                        lights[i]->transform.Translate(lights[i]->transform.position);
+                std::string lightGuiName = "Light" + std::to_string(i+1);
+                if (ImGui::CollapsingHeader(lightGuiName.c_str())) {
+                    if (lightType == 0) {
+                        // glm::vec3 lightPos = lights[i]->transform.GetPosition();
+                        if (ImGui::InputFloat3("LightPos", &lights[i]->transform.position[0])) {
+                            lights[i]->transform.Translate(lights[i]->transform.position);
+                        }
                     }
+                    else if (lightType == 1) {
+                        // glm::vec3 lightDir = lights[i]->transform.GetRotation();
+                        if (ImGui::InputFloat3("LightDir", &lights[i]->transform.rotation[0])) {
+                            lights[i]->transform.Rotate(lights[i]->transform.rotation);
+                        }
+                    }
+                    if (ImGui::InputFloat("Intensity", &lightIntensity, 1)) {
+                        lights[i]->SetIntensity(lightIntensity);
+                    }
+                    if (ImGui::InputFloat("Specular Intensity", &lightSpecInt)) {
+                        lights[i]->SetSpecularIntensity(lightSpecInt);
+                    }
+                    if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
+                        lights[i]->SetColor(lightColor);
+                    }
+                    if ( ImGui::InputFloat("LightType", &lightType)) {
+                        lights[i]->SetType(lightType);
+                    }
+                }
+
+                std::string lightUniformString = "lights[" + std::to_string(i) + "].";
+                glUseProgram(modelShaderProgram);
+                GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
+                GLint lightPositionUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
+                GLint lightIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "intensity").c_str());
+                GLint lightSpecIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "specularIntensity").c_str());
+                GLint lightTypeUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "type").c_str());
+                glUniform1f(lightTypeUniform, lightType);
+                glUniform4fv(lightColorUniform, 1, &lights[i]->GetColor()[0]);
+                if (lightType == 0) {
+                    glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.position[0]);
                 }
                 else if (lightType == 1) {
-                    // glm::vec3 lightDir = lights[i]->transform.GetRotation();
-                    if (ImGui::InputFloat3("LightDir", &lights[i]->transform.rotation[0])) {
-                        lights[i]->transform.Rotate(lights[i]->transform.rotation);
-                    }
+                    glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetFowDir()[0]);
                 }
-                if (ImGui::InputFloat("Intensity", &lightIntensity)) {
-                    lights[i]->SetIntensity(lightIntensity);
+                glUniform1f(lightIntensityUniform, lights[i]->GetIntensity());
+                glUniform1f(lightSpecIntensityUniform, lights[i]->GetSpecularIntensity());
+                glBindVertexArray(0);
+                glUseProgram(lightObjShaderProgram);
+
+                GLint lightDebugColUniform = glGetUniformLocation(lightObjShaderProgram, "lightColor");
+                lightSphere.transform.Translate(lights[i]->transform.position);
+                lightSphere.transform.Scale(glm::vec3(lights[i]->GetIntensity() * 0.2f));
+                glUniformMatrix4fv(lightMvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * lightSphere.transform.getModelMatrix()));
+                glUniformMatrix4fv(lightMMatrixUniform, 1, GL_FALSE, glm::value_ptr(lightSphere.transform.getModelMatrix()));
+                glUniform4fv(lightDebugColUniform, 1, &lights[i]->GetColor()[0]);
+                if (lightType != 1) {
+                    lightSphere.render(GL_LINES);
                 }
-                if (ImGui::InputFloat("Specular Intensity", &lightSpecInt)) {
-                    lights[i]->SetSpecularIntensity(lightSpecInt);
+                else {
+                    suzanne.render(GL_LINES);
                 }
-                if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
-                    lights[i]->SetColor(lightColor);
-                }
-                if ( ImGui::InputFloat("LightType", &lightType)) {
-                    lights[i]->SetType(lightType);
-                }
-            }
-            std::string lightUniformString = "lights[" + std::to_string(i) + "].";
-            glUseProgram(modelShaderProgram);
-            GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
-            GLint lightPositionUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "position").c_str());
-            GLint lightIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "intensity").c_str());
-            GLint lightSpecIntensityUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "specularIntensity").c_str());
-            GLint lightTypeUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "type").c_str());
-            glUniform1f(lightTypeUniform, lightType);
-            glUniform4fv(lightColorUniform, 1, &lights[i]->GetColor()[0]);
-            if (lightType == 0) {
-                glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.position[0]);
-            }
-            else if (lightType == 1) {
-                glUniform3fv(lightPositionUniform, 1, &lights[i]->transform.GetFowDir()[0]);
-            }
-            glUniform1f(lightIntensityUniform, lights[i]->GetIntensity());
-            glUniform1f(lightSpecIntensityUniform, lights[i]->GetSpecularIntensity());
-            glBindVertexArray(0);
+                glBindVertexArray(0);
+                ImGui::PopID();
         }
+
+
         ImGui::End();
+
+
 
         processInput(window);
 
@@ -391,6 +410,7 @@ int main() {
     }
 
     glDeleteProgram(modelShaderProgram);
+    glDeleteProgram(lightObjShaderProgram);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
