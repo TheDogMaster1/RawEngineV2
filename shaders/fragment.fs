@@ -43,9 +43,9 @@ void main()
             vec3 reflection = reflect(normalize(direction), normalize(fNor));
             vec3 camDir = normalize(fPos - camPos);
 
-            vec4 specular = pow(max(dot(reflection, camDir), 0), lights[i].specularIntensity) * lights[i].color;
+            vec4 specular = pow(max(dot(reflection, camDir), 0), lights[i].specularIntensity) * lights[i].color * albedo;
             specular.w = 1;
-            if (lights[i].specularIntensity == 0){
+            if (lights[i].specularIntensity == 0 || lights[i].intensity == 0){
                 specular = vec4(0);
             }
             result += attenuation + specular;
