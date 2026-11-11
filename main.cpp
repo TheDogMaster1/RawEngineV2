@@ -131,18 +131,21 @@ void LoadTextures(const unsigned int shaderProgram, core::Texture &difTexture, c
     // glBindVertexArray(0);
 }
 
+/**
+ * make sure to put this between ImGui::Begin and End.
+ */
 void ChangeObjectTransforms(core::Model* object,const std::string name) {
-    ImGui::Begin((name + "Input").c_str());
-    if (ImGui::InputFloat3((name + "Scale").c_str(), &object->transform.scale[0])) {
-        object->transform.Scale(object->transform.scale);
+    if (ImGui::CollapsingHeader((name + "Input").c_str())) {
+        if (ImGui::InputFloat3((name + "Scale").c_str(), &object->transform.scale[0])) {
+            object->transform.Scale(object->transform.scale);
+        }
+        if (ImGui::InputFloat3((name + "Position").c_str(), &object->transform.position[0])) {
+            object->transform.Translate(object->transform.position);
+        }
+        if (ImGui::InputFloat3((name + "Rotation").c_str(), &object->transform.rotation[0])) {
+            object->transform.Rotate(object->transform.rotation);
+        }
     }
-    if (ImGui::InputFloat3((name + "Position").c_str(), &object->transform.position[0])) {
-        object->transform.Translate(object->transform.position);
-    }
-    if (ImGui::InputFloat3((name + "Rotation").c_str(), &object->transform.rotation[0])) {
-        object->transform.Rotate(object->transform.rotation);
-    }
-    ImGui::End();
 }
 
 
@@ -265,7 +268,9 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Begin("Raw Engine v2");
-        ImGui::Text("Hello :)");
+        if (ImGui::CollapsingHeader("test")) {
+            ImGui::Text("Hello :)");
+        }
         if (ImGui::Button("Switch Draw Mode")) {
             if (drawMode == GL_TRIANGLES) {
                 drawMode = GL_LINES;
@@ -282,11 +287,12 @@ int main() {
         // }
         ImGui::InputFloat("Speed", &cameraSpeed, 1);
         ImGui::SliderFloat("Ambient Intensity", &ambientIntensity, 0, 1);
-        ImGui::End();
         ChangeObjectTransforms(&sphere, "Sphere");
         ChangeObjectTransforms(&suzanne, "Suzanne");
+        ImGui::End();
 
 
+        ImGui::Begin("Light controls");
         for (int i = 0; i < static_cast<int>(lights.size()); i++) {
 
 
@@ -296,32 +302,32 @@ int main() {
             float lightType = lights[i]->GetType();
 
             std::string lightGuiName = "Light" + std::to_string(i+1);
-            ImGui::Begin(lightGuiName.c_str());
-            if (lightType == 0) {
-                // glm::vec3 lightPos = lights[i]->transform.GetPosition();
-                if (ImGui::InputFloat3("LightPos", &lights[i]->transform.position[0])) {
-                    lights[i]->transform.Translate(lights[i]->transform.position);
+            if (ImGui::CollapsingHeader(lightGuiName.c_str())) {
+                if (lightType == 0) {
+                    // glm::vec3 lightPos = lights[i]->transform.GetPosition();
+                    if (ImGui::InputFloat3("LightPos", &lights[i]->transform.position[0])) {
+                        lights[i]->transform.Translate(lights[i]->transform.position);
+                    }
+                }
+                else if (lightType == 1) {
+                    // glm::vec3 lightDir = lights[i]->transform.GetRotation();
+                    if (ImGui::InputFloat3("LightDir", &lights[i]->transform.rotation[0])) {
+                        lights[i]->transform.Rotate(lights[i]->transform.rotation);
+                    }
+                }
+                if (ImGui::InputFloat("Intensity", &lightIntensity)) {
+                    lights[i]->SetIntensity(lightIntensity);
+                }
+                if (ImGui::InputFloat("Specular Intensity", &lightSpecInt)) {
+                    lights[i]->SetSpecularIntensity(lightSpecInt);
+                }
+                if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
+                    lights[i]->SetColor(lightColor);
+                }
+                if ( ImGui::InputFloat("LightType", &lightType)) {
+                    lights[i]->SetType(lightType);
                 }
             }
-            else if (lightType == 1) {
-                // glm::vec3 lightDir = lights[i]->transform.GetRotation();
-                if (ImGui::InputFloat3("LightDir", &lights[i]->transform.rotation[0])) {
-                    lights[i]->transform.Rotate(lights[i]->transform.rotation);
-                }
-            }
-            if (ImGui::InputFloat("Intensity", &lightIntensity)) {
-                lights[i]->SetIntensity(lightIntensity);
-            }
-            if (ImGui::InputFloat("Specular Intensity", &lightSpecInt)) {
-                lights[i]->SetSpecularIntensity(lightSpecInt);
-            }
-            if (ImGui::ColorPicker4("LightColor", &lightColor[0])) {
-                lights[i]->SetColor(lightColor);
-            }
-           if ( ImGui::InputFloat("LightType", &lightType)) {
-               lights[i]->SetType(lightType);
-           }
-            ImGui::End();
             std::string lightUniformString = "lights[" + std::to_string(i) + "].";
             glUseProgram(modelShaderProgram);
             GLint lightColorUniform = glGetUniformLocation(modelShaderProgram, (lightUniformString + "color").c_str());
@@ -341,6 +347,7 @@ int main() {
             glUniform1f(lightSpecIntensityUniform, lights[i]->GetSpecularIntensity());
             glBindVertexArray(0);
         }
+        ImGui::End();
 
         processInput(window);
 
