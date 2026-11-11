@@ -238,6 +238,8 @@ int main() {
     core::Texture donQuixoteNormalTexture("Textures/LCB_Sinner_Don_Quixote_Profile_normal.png");
     core::Texture brickDifTexture("Textures/red_brick_diff_4k.png");
     core::Texture brickNormalTexture("Textures/red_brick_nor_gl_4k.png");
+    core::Texture hexDifTexture("textures/hexDiff.png");
+    core::Texture hexNormTexture("textures/hexNorm.png");
 
     glm::vec4 clearColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
     glClearColor(clearColor.r,
@@ -381,6 +383,7 @@ int main() {
         quadModel.render(drawMode);
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, glm::value_ptr(camera.GetViewProjection() * sphere.transform.getModelMatrix()));
         glUniformMatrix4fv(mMatrixUniform, 1, GL_FALSE, glm::value_ptr(sphere.transform.getModelMatrix()));
+        LoadTextures(modelShaderProgram,donQuixoteTexture, hexNormTexture);
         sphere.render(drawMode);
         glBindVertexArray(0);
 
@@ -396,7 +399,7 @@ int main() {
 
         GLint lightAI0Uniform = glGetUniformLocation(modelShaderProgram, "ambientIntensity");
         glUniform1f(lightAI0Uniform, ambientIntensity);
-        suzanne.render(drawMode);
+        // suzanne.render(drawMode);
         glBindVertexArray(0);
 
         ImGui::Render();

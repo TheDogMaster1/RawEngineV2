@@ -38,7 +38,7 @@ void main()
             vec4 DiffuseColor = max(dot(normalize(normalColor), normalize(T_direction)), 0) * lights[i].color * albedo * lights[i].intensity;
                  DiffuseColor.w = 0;
 
-            vec4 attenuation = DiffuseColor / (1 + 0.5 * length(direction) + 0.2 * length(direction));
+            vec4 attenuation = DiffuseColor / (1 + 0.5 * length(direction) + 0.2 * pow(length(direction),2));
 
             vec3 reflection = reflect(normalize(direction), normalize(fNor));
             vec3 camDir = normalize(fPos - camPos);
